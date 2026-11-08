@@ -1,0 +1,28 @@
+[workspace]
+resolver = "3"
+members = ["crates/lobby-proto", "crates/lobby-server", "crates/lobby-client"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/RosacePony/RosaceLobby"
+
+[workspace.dependencies]
+lobby-proto = { path = "crates/lobby-proto" }
+lobby-client = { path = "crates/lobby-client" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Small debug info: line tables keep panic line numbers, dependencies carry none.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = "thin"
+codegen-units = 4

@@ -1,0 +1,17 @@
+[package]
+name = "lobby-client"
+description = "Blocking client for the Rosace lobby server: register/heartbeat/list over HTTP, hole punching with relay fallback over std UDP sockets. No async runtime needed."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["tls"]
+# https:// lobby URLs (rustls).
+tls = ["ureq/rustls"]
+
+[dependencies]
+lobby-proto.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ureq = { version = "3", default-features = false, features = ["json"] }

@@ -1,0 +1,29 @@
+# systemd alternative to Docker.
+#   sudo useradd --system --no-create-home rosace-lobby
+#   sudo install -m 755 target/release/lobby-server /usr/local/bin/lobby-server
+#   sudo cp deploy/rosace-lobby.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now rosace-lobby
+#   journalctl -u rosace-lobby -f
+[Unit]
+Description=Rosace lobby server (lobby list, UDP hole punching, relay)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=rosace-lobby
+ExecStart=/usr/local/bin/lobby-server
+Environment=LOBBY_HTTP_ADDR=0.0.0.0:8080
+Environment=LOBBY_RENDEZVOUS_ADDR=0.0.0.0:7777
+Environment=LOBBY_RELAY_ADDR=0.0.0.0:7778
+Environment=LOBBY_LOG=info
+Restart=on-failure
+RestartSec=2
+# Hardening.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

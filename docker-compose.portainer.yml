@@ -1,0 +1,73 @@
+# Rosace lobby server - Portainer stack.
+# Portainer > Stacks > Add stack > Web editor: paste this file as-is, then "Deploy the stack".
+# Nothing is built on the server: the image comes from GitHub Container Registry
+# (built by .github/workflows/docker.yml on every push to main and on version tags).
+#
+# Ports to open in the VPS firewall (and in the OVH network firewall if it is enabled):
+#   8080/tcp  HTTP API (lobby list, register, heartbeat)
+#   7777/udp  rendezvous (NAT hole punching)
+#   7778/udp  relay (fallback when punching fails)
+# Check after deploying:  curl http://<server-ip>:8080/health
+#
+# Hole punching needs the REAL source address (IP + port) of every UDP datagram. Docker's
+# normal published ports (iptables DNAT) keep it. If players can list games but every join
+# falls back to the relay or fails, Docker is rewriting UDP sources (rootless Docker,
+# "userland-proxy" handling UDP, iptables disabled): switch to the host-network variant
+# at the bottom of this file.
+
+services:
+  lobby:
+    image: ghcr.io/rosacepony/rosace-lobby:latest
+    container_name: rosace-lobby
+    restart: unless-stopped
+    ports:
+      - "8080:8080/tcp"
+      - "7777:7777/udp"
+      - "7778:7778/udp"
+    environment:
+      # Listen addresses inside the container (keep in sync with "ports").
+      LOBBY_HTTP_ADDR: "0.0.0.0:8080"
+      LOBBY_RENDEZVOUS_ADDR: "0.0.0.0:7777"
+      LOBBY_RELAY_ADDR: "0.0.0.0:7778"
+      # Log level: error, warn, info, debug (e.g. "info,lobby_server=debug").
+      LOBBY_LOG: "info"
+      # Hosts heartbeat every 5 s; a lobby silent for 20 s disappears.
+      LOBBY_HEARTBEAT_SECS: "5"
+      LOBBY_EXPIRE_SECS: "20"
+      # Anti-abuse limits.
+      LOBBY_MAX_LOBBIES: "2000"
+      LOBBY_MAX_LOBBIES_PER_IP: "5"
+      LOBBY_RATE_PER_MIN: "120"        # HTTP requests per minute and IP
+      LOBBY_REGISTER_PER_MIN: "10"     # lobby registrations per minute and IP
+      LOBBY_UDP_PER_SEC: "50"          # UDP control packets per second and IP
+      # Relay limits (only used when hole punching fails).
+      RELAY_MAX_SESSIONS: "512"
+      RELAY_MAX_SESSIONS_PER_IP: "8"
+      RELAY_BYTES_PER_SEC: "1000000"   # per session, both directions (1 MB/s)
+      RELAY_IDLE_SECS: "30"
+      # Behind a reverse proxy (HTTPS) only: trust X-Forwarded-For for rate limits.
+      LOBBY_TRUST_PROXY: "false"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/lobby-server", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ---------------------------------------------------------------------------------------
+# Alternative: host networking (the container uses the VPS ports directly, UDP source
+# addresses are always preserved). Replace the "ports:" block above with:
+#
+#    network_mode: host
+#
+# (no "ports:" section with host networking; the firewall rules stay the same).

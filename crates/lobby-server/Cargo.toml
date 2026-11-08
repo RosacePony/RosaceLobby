@@ -1,0 +1,26 @@
+[package]
+name = "lobby-server"
+description = "Rosace lobby server: lobby list (HTTP), UDP rendezvous for hole punching, UDP relay fallback."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "lobby-server"
+path = "src/main.rs"
+
+[dependencies]
+lobby-proto.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "query", "tokio", "tracing"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+clap = { version = "4", features = ["derive", "env"] }
+getrandom = "0.3"
+
+[dev-dependencies]
+lobby-client.workspace = true
+
+ureq = { version = "3", default-features = false, features = ["json"] }

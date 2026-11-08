@@ -1,0 +1,10 @@
+[package]
+name = "lobby-proto"
+description = "Shared wire types of the Rosace lobby service (HTTP JSON API + UDP rendezvous/relay packets)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
