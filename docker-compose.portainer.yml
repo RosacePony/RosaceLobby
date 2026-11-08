@@ -1,12 +1,14 @@
 # Rosace lobby server - Portainer stack.
 # Portainer > Stacks > Add stack > Web editor: paste this file as-is, then "Deploy the stack".
-# Nothing is built on the server: the image comes from GitHub Container Registry
-# (built by .github/workflows/docker.yml on every push to main and on version tags).
+# The image is built on the server straight from the public GitHub repo (first deploy takes
+# a few minutes). Update later: Stacks > rosace-lobby > "Update the stack" (re-pull/rebuild).
 #
 # Ports to open in the VPS firewall (and in the OVH network firewall if it is enabled):
 #   8080/tcp  HTTP API (lobby list, register, heartbeat)
 #   7777/udp  rendezvous (NAT hole punching)
 #   7778/udp  relay (fallback when punching fails)
+#   AlmaLinux:  sudo firewall-cmd --permanent --add-port=8080/tcp --add-port=7777/udp --add-port=7778/udp
+#               sudo firewall-cmd --reload
 # Check after deploying:  curl http://<server-ip>:8080/health
 #
 # Hole punching needs the REAL source address (IP + port) of every UDP datagram. Docker's
@@ -17,7 +19,9 @@
 
 services:
   lobby:
-    image: ghcr.io/rosacepony/rosace-lobby:latest
+    build:
+      context: https://github.com/RosacePony/RosaceLobby.git#main
+    image: rosace-lobby:latest
     container_name: rosace-lobby
     restart: unless-stopped
     ports:
